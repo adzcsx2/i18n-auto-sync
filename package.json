@@ -1,0 +1,150 @@
+{
+  "name": "i18n-auto-sync",
+  "displayName": "I18n Auto Sync",
+  "description": "自动同步和翻译 i18n 文件的 VS Code 扩展",
+  "version": "0.1.0",
+  "publisher": "adzcsx2",
+  "repository": {
+    "type": "git",
+    "url": "https://example.com/your-repo.git"
+  },
+  "engines": {
+    "vscode": "^1.104.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact",
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact"
+  ],
+  "main": "./out/src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "i18n-auto-sync.processCurrentFile",
+        "title": "Process Current File for i18n",
+        "category": "I18n"
+      },
+      {
+        "command": "i18n-auto-sync.syncTranslations",
+        "title": "Sync i18n Translations",
+        "category": "I18n"
+      },
+      {
+        "command": "i18n-auto-sync.toggleAutoSync",
+        "title": "Toggle Auto i18n Sync on Save",
+        "category": "I18n"
+      },
+      {
+        "command": "i18n-auto-sync.sortTranslationFiles",
+        "title": "Sort Translation Files (zh/en)",
+        "category": "I18n"
+      },
+      {
+        "command": "i18n-auto-sync.renameKey",
+        "title": "Rename i18n Key (under cursor or selection)",
+        "category": "I18n"
+      },
+      {
+        "command": "i18n-auto-sync.saveAndProcess",
+        "title": "Save File And Process i18n",
+        "category": "I18n"
+      },
+      {
+        "command": "i18n-auto-sync.pureSave",
+        "title": "Pure Save (no i18n processing)",
+        "category": "I18n"
+      }
+    ],
+    "configuration": {
+      "title": "I18n Auto Sync",
+      "properties": {
+        "i18n-auto-sync.triggerMode": {
+          "type": "string",
+            "enum": ["auto-save", "manual"],
+            "default": "manual",
+            "description": "触发模式: auto-save=文件保存自动处理; manual=仅使用命令(saveAndProcess)处理" 
+        },
+        "i18n-auto-sync.langRootDir": {
+          "type": "string",
+          "default": "src/",
+          "description": "多语言根目录（相对工作区）。最终翻译文件位置为 <langRootDir>i18n/lang/{zh|en}/common.ts。例如设为 'src/' 则生成 src/i18n/lang/zh/common.ts" 
+        },
+        "i18n-auto-sync.fileExtensions": {
+          "type": "string",
+          "default": ".tsx,.ts,.jsx,.js",
+          "description": "支持的文件扩展名，用逗号分隔。例如：.tsx,.ts,.jsx,.js"
+        },
+        "i18n-auto-sync.activeDirectories": {
+          "type": "string",
+          "default": "src/*,pages/*",
+          "description": "仅这些相对工作区目录下的文件保存时才触发处理，用逗号分隔。为空则表示全部。'src' 仅匹配 src 目录直接文件，'src/*' 匹配其所有子文件(递归)。例如：src/*,pages/*"
+        },
+        "i18n-auto-sync.excludePatterns": {
+          "type": "string",
+          "default": "node_modules,.next,dist,build",
+          "description": "排除的目录（不检测该目录），用逗号分隔。例如：node_modules,.next,dist,build"
+        },
+        "i18n-auto-sync.cleanUnusedKeys": {
+          "type": "boolean",
+          "default": true,
+          "description": "自动清理未使用的翻译键"
+        },
+        "i18n-auto-sync.processDebounceMs": {
+          "type": "number",
+          "default": 400,
+          "description": "保存触发后最短再次处理的间隔(毫秒)，避免频繁多次包裹"
+        },
+        "i18n-auto-sync.autoTranslate": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否自动调用腾讯云翻译生成英文；关闭时只维护中文与 key"
+        },
+        "i18n-auto-sync.tencentSecretId": {
+          "type": "string",
+          "default": "",
+          "description": "腾讯云翻译 Secret ID"
+        },
+        "i18n-auto-sync.tencentSecretKey": {
+          "type": "string",
+          "default": "",
+          "description": "腾讯云翻译 Secret Key"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "i18n-auto-sync.processCurrentFile",
+        "key": "ctrl+shift+i",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "i18n-auto-sync.renameKey",
+        "key": "ctrl+shift+r",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "i18n-auto-sync.saveAndProcess",
+        "key": "ctrl+alt+s",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "16.x",
+    "@types/vscode": "^1.104.0",
+    "typescript": "^4.9.4",
+    "vsce": "^2.15.0"
+  },
+  "dependencies": {
+    "https": "^1.0.0"
+  }
+}
