@@ -12,6 +12,8 @@ Automatically convert Chinese strings to `t("key")` format and maintain translat
 - 📁 **File Sync**: Auto update `zh/common.ts` and `en/common.ts` translation files
 - 🌍 **Auto Translate**: Optional Tencent Cloud automatic English translation
 
+> ⚠️ **Important Notice**: Currently, the extension only processes strings containing Chinese characters. Pure English or other language strings will not be converted.
+
 ## 👤 User Guide
 
 If you just want to use this extension, follow these steps:
@@ -199,6 +201,10 @@ A: Check the following settings:
 1. Ensure `triggerMode` is set correctly
 2. Check if `activeDirectories` includes current file directory  
 3. Make sure to save the file before manually triggering
+4. **Note**: Only strings containing Chinese characters will be processed
+
+### Q: English strings are not being converted?
+A: This is by design. The extension currently only processes strings that contain Chinese characters (汉字). Pure English strings will be ignored to avoid unnecessary conversions.
 
 ### Q: Translation files not generated?
 A: Ensure:
