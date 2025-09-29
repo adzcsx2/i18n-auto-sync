@@ -80,9 +80,49 @@ npm run watch
 # 打包为 VSIX 文件
 npm run package
 
-# 安装到 VS Code
+# 安装到 VS Code（旧方法）
 code --install-extension i18n-auto-sync-0.1.0.vsix
 ```
+
+### 5️⃣ 快速安装/卸载命令
+
+#### 使用 npm 脚本（推荐）
+```bash
+# 安装插件
+npm run install
+
+# 卸载插件
+npm run uninstall
+```
+
+#### 使用 PowerShell 脚本
+```bash
+# 安装插件
+.\install.ps1
+
+# 卸载插件
+.\uninstall.ps1
+```
+
+#### 使用批处理文件
+```bash
+# 安装插件
+install.bat
+
+# 卸载插件
+uninstall.bat
+```
+
+#### 一键开发流程
+```bash
+# 编译 + 打包 + 安装 一条命令完成
+npm run install
+```
+
+> 💡 **提示**: 
+> - 安装脚本会自动查找最新的 `.vsix` 文件
+> - 安装前会自动卸载旧版本避免冲突
+> - 安装后可能需要重启 VS Code
 
 ## ⚙️ 配置选项
 

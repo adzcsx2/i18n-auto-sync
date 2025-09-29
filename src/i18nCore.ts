@@ -44,16 +44,120 @@ export class PathUtils {
 export class ChineseStringProcessor {
   private zhRe = /[\u4e00-\u9fa5]+/g;
   private newTranslations: Record<string,string> = {};
-  processFileContent(content: string): { content: string; hasChanges: boolean; newTranslations: Record<string,string> } {
+  
+  // 检测是否在组件外部使用了t函数
+  private detectOutsideComponentTUsage(code: string): boolean {
+    const lines = code.split('\n');
+    let inComponent = false;
+    let braceDepth = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // 检测组件函数开始
+      if (line.match(/^(export\s+default\s+)?function\s+\w+/i) ||
+          line.match(/^const\s+\w+[:\s]*=.*=>/i)) {
+        inComponent = true;
+        braceDepth = 0;
+      }
+      
+      // 计算大括号深度来判断是否还在组件内
+      if (inComponent) {
+        for (const char of line) {
+          if (char === '{') braceDepth++;
+          else if (char === '}') braceDepth--;
+        }
+        
+        // 如果回到顶层，说明组件结束
+        if (braceDepth === 0 && line.includes('}')) {
+          inComponent = false;
+        }
+      }
+      
+      // 如果不在组件内，检查是否有t函数调用
+      if (!inComponent && line.includes('t(')) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+  
+  // 检测是否需要进行组件作用域处理
+  private needsComponentScopeHandling(code: string): boolean {
+    // 检查是否有组件外部的常量定义（如 const ITEM = [...] 这样的模式）
+    const constantPatterns = [
+      /^const\s+[A-Z_][A-Z0-9_]*\s*=\s*\[/m,  // const ITEM = [
+      /^const\s+[a-z][a-zA-Z0-9]*Items?\s*=/m, // const menuItems =
+      /^const\s+[a-z][a-zA-Z0-9]*Config\s*=/m  // const appConfig =
+    ];
+    
+    return constantPatterns.some(pattern => pattern.test(code));
+  }
+  
+  // 检测指定位置是否在组件作用域内
+  private isInComponentScope(fullText: string, offset: number): boolean {
+    // 从当前位置向前查找，确定是否在组件函数内部
+    const beforeText = fullText.slice(0, offset);
+    const lines = beforeText.split('\n');
+    
+    let inComponent = false;
+    let braceDepth = 0;
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // 检测组件函数开始
+      if (trimmedLine.match(/^(export\s+default\s+)?function\s+\w+/i) ||
+          trimmedLine.match(/^const\s+\w+[:\s]*=.*=>/i)) {
+        inComponent = true;
+        braceDepth = 0;
+      }
+      
+      // 计算大括号深度
+      if (inComponent) {
+        for (const char of line) {
+          if (char === '{') braceDepth++;
+          else if (char === '}') braceDepth--;
+        }
+        
+        // 如果回到顶层，组件结束
+        if (braceDepth === 0 && line.includes('}')) {
+          inComponent = false;
+        }
+      }
+    }
+    
+    return inComponent && braceDepth > 0;
+  }
+  processFileContent(content: string, opts?: {processExternalConstants?: boolean}): { content: string; hasChanges: boolean; newTranslations: Record<string,string> } {
     let changed = false;
     let code = this.ensureImport(content);
     if (code !== content) changed = true;
     this.newTranslations = {};
-    const strRe = /(["'`])((?:(?!\1)[^\\]|\\.)*)(\1)/g;
+    
+    // 首先检测是否在组件外部有常量定义需要处理
+    const needsComponentScopeDetection = this.needsComponentScopeHandling(code);
+    
+  const strRe = /(["'`])((?:(?!\1)[^\\]|\\.)*)(\1)/g;
     code = code.replace(strRe,(m,q,inner,_q2,offset,full)=>{
       const before = full.slice(Math.max(0, offset-8), offset);
       if (/t\(\s*$/.test(before)) return m; // already t("...") param
       if(!this.shouldProcess(inner)) return m;
+      
+      // 如果需要检测作用域，检查是否在组件内部
+      if (needsComponentScopeDetection && !this.isInComponentScope(full, offset)) {
+        // 若启用了 processExternalConstants，则使用 i18n.t(...) 替换（安全，不依赖 hook）
+        if (opts && opts.processExternalConstants) {
+          const key = this.genKey(inner);
+          this.newTranslations[key] ||= inner;
+          changed = true;
+          // 返回 i18n.t("key")，import 插入将会在后续步骤统一处理
+          return `i18n.t("${key}")`;
+        }
+        return m; // 不处理组件外部的字符串
+      }
+      
       const key = this.genKey(inner);
       this.newTranslations[key] ||= inner;
       changed = true;
@@ -89,6 +193,15 @@ export class ChineseStringProcessor {
     if (code !== beforeFixBraces) changed = true;
     
     code = code.replace(/>(\s*)t\("([^"\\]+)"\)(\s*)</g,(_m,p1,k,p3)=>`>${p1}{t("${k}")}${p3}<`);
+
+    // 如果在处理外部常量时产生了 i18n.t(...) 的使用，确保在文件顶部插入 import i18n
+    if (opts && opts.processExternalConstants && /\bi18n\.t\(/.test(code)) {
+      if (!/import\s+i18n\s+from\s+['"]@\/i18n['"]/.test(code)) {
+        code = this.ensureI18nImport(code);
+        changed = true;
+      }
+    }
+
     return { content: code, hasChanges: changed, newTranslations: { ...this.newTranslations } };
   }
   private shouldProcess(str: string){ return !!str && str.length>1 && this.zhRe.test(str) && !str.includes('t('); }
@@ -147,6 +260,19 @@ export class ChineseStringProcessor {
     return updatedCode;
   }
   
+  // 确保文件导入 i18n 实例（用于在组件外调用 i18n.t()）
+  private ensureI18nImport(code: string) {
+    const lines = code.split('\n');
+    // 如果已经存在则直接返回
+    if (lines.some(l=> /import\s+i18n\s+from\s+['"]@\/i18n['"]/.test(l))) return code;
+    // 找到最后一个 import 插入
+    let lastImportIndex = -1;
+    lines.forEach((line, idx)=>{ if (line.trim().startsWith('import ') && !line.includes('//')) lastImportIndex = idx; });
+    const insertAt = lastImportIndex >= 0 ? lastImportIndex + 1 : 0;
+    lines.splice(insertAt, 0, `import i18n from "@/i18n";`);
+    return lines.join('\n');
+  }
+  
   private ensureUseTranslationHook(code: string): string {
     // 检查是否已经有 useTranslation hook 调用
     if (code.includes('const { t }') || code.includes('const {t}')) {
@@ -161,18 +287,36 @@ export class ChineseStringProcessor {
       const line = lines[i];
       const trimmedLine = line.trim();
       
-      // 匹配函数组件模式：function ComponentName() 或 const ComponentName = () => 或 export default function
-      if (trimmedLine.match(/^(export\s+default\s+)?function\s+\w+\s*\(/i) ||
-          trimmedLine.match(/^const\s+\w+[:\s]*=.*=>\s*{?$/i) ||
+      // 匹配函数组件模式：function ComponentName 或 const ComponentName = 或 export default function
+      if (trimmedLine.match(/^(export\s+default\s+)?function\s+\w+/i) ||
+          trimmedLine.match(/^const\s+\w+[:\s]*=.*=>/i) ||
           trimmedLine.match(/^export\s+default\s+function/i)) {
         
-        // 查找组件函数体的开始（第一个 {）
+        // 查找真正的函数体开始位置 - 需要找到完整的函数签名结束后的第一个 {
         let j = i;
+        let braceCount = 0;
+        let inFunctionSignature = true;
+        
         while (j < lines.length) {
-          if (lines[j].includes('{')) {
-            hookInsertIndex = j + 1;
-            break;
+          const currentLine = lines[j];
+          
+          // 计算当前行的括号数量来判断是否还在函数签名中
+          for (const char of currentLine) {
+            if (char === '(') {
+              braceCount++;
+            } else if (char === ')') {
+              braceCount--;
+              if (braceCount === 0) {
+                inFunctionSignature = false;
+              }
+            } else if (char === '{' && !inFunctionSignature) {
+              // 找到函数体开始的 {
+              hookInsertIndex = j + 1;
+              break;
+            }
           }
+          
+          if (hookInsertIndex >= 0) break;
           j++;
         }
         break;
@@ -181,9 +325,18 @@ export class ChineseStringProcessor {
     
     // 如果找到了组件函数，在函数体开始处插入 hook 调用
     if (hookInsertIndex >= 0) {
-      // 获取缩进
-      const nextLine = lines[hookInsertIndex] || '';
-      const indent = nextLine.match(/^\s*/)?.[0] || '  ';
+      // 获取缩进 - 查看函数体内的第一个非空行的缩进
+      let indent = '   '; // 默认缩进
+      for (let k = hookInsertIndex; k < lines.length; k++) {
+        const line = lines[k];
+        if (line.trim()) {
+          const match = line.match(/^(\s*)/);
+          if (match) {
+            indent = match[1];
+          }
+          break;
+        }
+      }
       
       lines.splice(hookInsertIndex, 0, `${indent}const { t } = useTranslation();`);
     }

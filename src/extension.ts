@@ -470,7 +470,8 @@ export function useLanguageSwitch() {
         const content = document.getText();
         console.log('File content length:', content.length);
         console.log('File content preview:', content.substring(0, 200));
-        const result = this.processor.processFileContent(content);
+  const processExternal = cfg.get('processExternalConstants', false);
+  const result = this.processor.processFileContent(content, { processExternalConstants: !!processExternal });
         console.log('Processing result:', {
           hasChanges: result.hasChanges,
           newTranslationsCount: Object.keys(result.newTranslations).length,
@@ -582,7 +583,7 @@ export function useLanguageSwitch() {
   toggleAutoSync(){ this.isEnabled=!this.isEnabled; this.updateStatusBar(); vscode.window.showInformationMessage(`I18n auto sync ${this.isEnabled? 'enabled':'disabled'}`); }
   private updateStatusBar(){ this.statusBarItem.text = `${this.isEnabled? '$(sync) I18n:ON':'$(sync-ignored) I18n:OFF'}`; this.statusBarItem.show(); }
   private log(msg:string){ const ts=new Date().toLocaleTimeString(); this.outputChannel.appendLine(`[${ts}] ${msg}`); }
-  private collectAllTKeys(content:string){ const set=new Set<string>(); const r=/t\(\s*['"]([^'"(){}<>]+)['"]\s*\)/g; let m:RegExpExecArray|null; while((m=r.exec(content))!==null){ set.add(m[1]); } return set; }
+  private collectAllTKeys(content:string){ const set=new Set<string>(); const r=/\b(?:t|i18n\.t)\(\s*['"]([^'"(){}<>]+)['"]\s*\)/g; let m:RegExpExecArray|null; while((m=r.exec(content))!==null){ set.add(m[1]); } return set; }
   dispose(){ this.statusBarItem.dispose(); this.outputChannel.dispose(); }
 }
 

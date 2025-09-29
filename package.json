@@ -2,11 +2,11 @@
   "name": "i18n-auto-sync",
   "displayName": "I18n Auto Sync",
   "description": "自动同步和翻译 i18n 文件的 VS Code 扩展",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "adzcsx2",
   "repository": {
     "type": "git",
-    "url": "https://example.com/your-repo.git"
+    "url": "https://github.com/adzcsx2/i18n-auto-sync.git"
   },
   "engines": {
     "vscode": "^1.104.0"
@@ -113,6 +113,12 @@
           "default": "",
           "description": "腾讯云翻译 Secret Key"
         }
+        ,
+        "i18n-auto-sync.processExternalConstants": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否处理组件外部的常量（将字符串替换为 i18n.t(...) 并确保导入 i18n）。默认 false（更安全）。"
+        }
       }
     },
     "keybindings": [
@@ -136,7 +142,9 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "package": "vsce package"
+    "package": "vsce package",
+    "install": "npm run compile && npm run package && powershell -ExecutionPolicy Bypass -File install.ps1",
+    "uninstall": "powershell -ExecutionPolicy Bypass -File uninstall.ps1"
   },
   "devDependencies": {
     "@types/node": "16.x",

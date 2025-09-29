@@ -84,9 +84,49 @@ npm run watch
 # Package as VSIX file
 npm run package
 
-# Install to VS Code
+# Install to VS Code (old method)
 code --install-extension i18n-auto-sync-0.1.0.vsix
 ```
+
+### 5️⃣ Quick Install/Uninstall Commands
+
+#### Using npm scripts (Recommended)
+```bash
+# Install extension
+npm run install
+
+# Uninstall extension
+npm run uninstall
+```
+
+#### Using PowerShell scripts
+```bash
+# Install extension
+.\install.ps1
+
+# Uninstall extension
+.\uninstall.ps1
+```
+
+#### Using batch files
+```bash
+# Install extension
+install.bat
+
+# Uninstall extension
+uninstall.bat
+```
+
+#### One-click development workflow
+```bash
+# Compile + Package + Install in one command
+npm run install
+```
+
+> 💡 **Tips**: 
+> - Install scripts automatically find the latest `.vsix` file
+> - Old versions are automatically uninstalled before installation
+> - You may need to restart VS Code after installation
 
 ## ⚙️ Configuration Options
 
