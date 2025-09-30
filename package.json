@@ -2,7 +2,7 @@
   "name": "i18n-auto-sync",
   "displayName": "I18n Auto Sync",
   "description": "自动同步和翻译 i18n 文件的 VS Code 扩展",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "adzcsx2",
   "repository": {
     "type": "git",
