@@ -204,7 +204,22 @@ export class ChineseStringProcessor {
 
     return { content: code, hasChanges: changed, newTranslations: { ...this.newTranslations } };
   }
-  private shouldProcess(str: string){ return !!str && str.length>1 && this.zhRe.test(str) && !str.includes('t('); }
+  // Process strings that contain Chinese characters. Previously strings with length <= 1 were skipped,
+  // which prevented single-character labels like '男'/'女' from being extracted. Accept length >= 1,
+  // but filter out strings that are only punctuation or already contain a t( call.
+  private shouldProcess(str: string){
+    if(!str) return false;
+    const cleaned = str.trim();
+    if(!cleaned) return false;
+    // skip if already wrapped/contains t(
+    if(cleaned.includes('t(')) return false;
+    // must contain at least one CJK unified ideograph
+    if(!this.zhRe.test(cleaned)) return false;
+    // skip if it's just a single punctuation symbol
+    if(/^[\p{P}\p{S}]$/u.test(cleaned)) return false;
+    // accept single or multi-character Chinese strings (e.g. 男, 女, 保存成功)
+    return cleaned.length >= 1;
+  }
   private genKey(text: string){ return text.trim().replace(/\s+/g,'_').replace(/[^\u4e00-\u9fa5a-zA-Z0-9_]/g,'').slice(0,60); }
   private ensureImport(code: string){
     // 始终使用 @/i18n/hooks 路径，这是项目的标准结构
