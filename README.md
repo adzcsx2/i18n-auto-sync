@@ -1,220 +1,61 @@
-# I18n Auto Sync - VS Code Extension
+# README.md
 
-[🇨🇳 中文](README.md) | [🇺🇸 English](README-en.md)
+[🇨🇳 中文](README.md) | [🇺🇸 English](README_EN.md)
 
-一键将中文字符串自动转换为 `t("key")` 形式，并同步维护翻译文件的 VS Code 扩展。
+这个文件为 Claude Code (claude.ai/code) 在此代码库中工作时提供指导。
 
-## ✨ 核心功能
+## 项目概述
 
-- 🚀 **自动转换**: 将 `"你好世界"` 转换为 `{t("你好世界")}`
-- 📝 **自动导入**: 自动添加 `import { useTranslation } from "@/i18n/hooks"`
-- 🎯 **自动调用**: 自动添加 `const { t } = useTranslation()`
-- 📁 **文件同步**: 自动更新 `zh/common.ts` 和 `en/common.ts` 翻译文件
-- 🌍 **自动翻译**: 可选的腾讯云自动英文翻译(每个月500w免费,相比百度只有5w这个好用)
+这是一个用于自动 i18n（国际化）同步和翻译的 VS Code 扩展。它会自动将代码中的中文字符串转换为 `t("key")` 格式并维护翻译文件。该扩展专门针对具有中文到英文翻译工作流的 React/TypeScript 项目。
 
-> ⚠️ **重要提示**: 目前插件只会处理包含中文字符的字符串。纯英文或其他语言的字符串不会被转换。
+## 常用命令
 
-## � 使用者指南
-
-如果您只是想使用这个插件，按以下步骤操作：
-
-### 1️⃣ 安装插件
-1. 下载 `i18n-auto-sync-0.1.0.vsix` 文件
-2. 在 VS Code 中按 `Ctrl+Shift+P`（Windows）或 `Cmd+Shift+P`（Mac）
-3. 输入 `Extensions: Install from VSIX...`
-4. 选择下载的 `.vsix` 文件
-
-### 2️⃣ 配置项目
-确保你的项目有以下结构：
-```
-src/
-  i18n/
-    lang/
-      zh/
-        common.ts
-      en/
-        common.ts
-```
-
-### 3️⃣ 使用方法
-- **自动模式**: 保存文件时自动转换（默认开启）
-- **手动模式**: 
-  - `Ctrl+Shift+I`: 处理当前文件
-  - `Ctrl+Shift+R`: 重命名翻译键
-  - `Ctrl+Alt+S`: 保存并处理
-
-### 4️⃣ 插件设置
-在 VS Code 设置中搜索 `i18n-auto-sync`，可配置：
-- 触发模式（自动/手动）
-- 翻译文件路径
-- 目标目录过滤
-- 腾讯云翻译（可选）
-
-## 🛠️ 开发者指南
-
+### 开发
 ```bash
-git clone <repository-url>
-cd i18n-auto-sync
-npm install
-```
-
-### 2️⃣ 开发环境设置
-
-```bash
-# 编译 TypeScript
+# 将 TypeScript 编译为 JavaScript
 npm run compile
 
-# 监听文件变化（推荐开发时使用）
+# 开发模式（文件变化时重新编译）
 npm run watch
-```
 
-### 3️⃣ 调试模式
-
-1. 在 VS Code 中打开插件项目
-2. 按 `F5` 启动扩展开发主机
-3. 在新打开的 VS Code 窗口中测试插件功能
-
-### 4️⃣ 打包发布
-
-```bash
-# 打包为 VSIX 文件
+# 将扩展打包为 VSIX 文件
 npm run package
 
-# 安装到 VS Code（旧方法）
-code --install-extension i18n-auto-sync-0.1.0.vsix
-```
-
-### 5️⃣ 快速安装/卸载命令
-
-#### 使用 npm 脚本（推荐）
-```bash
-# 安装插件
+# 完整开发工作流（编译 + 打包 + 安装）
 npm run install
 
-# 卸载插件
+# 卸载扩展
 npm run uninstall
 ```
 
-#### 使用 PowerShell 脚本
-```bash
-# 安装插件
-.\install.ps1
+### 调试
+- 在 VS Code 中按 `F5` 启动扩展开发主机
+- 在新打开的 VS Code 窗口中测试扩展功能
 
-# 卸载插件
-.\uninstall.ps1
-```
+## 架构
 
-#### 使用批处理文件
-```bash
-# 安装插件
-install.bat
+### 核心组件
 
-# 卸载插件
-uninstall.bat
-```
+1. **extension.ts** - 扩展主入口点
+   - `I18nAutoSyncExtension` 类管理扩展生命周期
+   - 处理 VS Code 命令、配置和文件监视
+   - 包含 `WriteBatch` 类用于协调文件写入以避免冲突
 
-#### 一键开发流程
-```bash
-# 编译 + 打包 + 安装 一条命令完成
-npm run install
-```
+2. **i18nCore.ts** - 核心处理逻辑
+   - `PathUtils` - 项目结构的集中路径管理
+   - `ChineseStringProcessor` - 检测和处理代码中的中文字符串
+   - `I18nSyncer` - 管理翻译文件和外部翻译 API
 
-> 💡 **提示**: 
-> - 安装脚本会自动查找最新的 `.vsix` 文件
-> - 安装前会自动卸载旧版本避免冲突
-> - 安装后可能需要重启 VS Code
+### 关键特性
 
-## ⚙️ 配置选项
+- **中文字符串检测**：仅处理包含中文字符的字符串 ([\u4e00-\u9fa5])
+- **组件作用域处理**：检测 `t()` 函数是否在 React 组件外部使用
+- **翻译管理**：维护同步的 zh/common.ts 和 en/common.ts 文件
+- **腾讯云集成**：通过腾讯云 API 进行可选的自动翻译
 
-在 VS Code 设置中搜索 `i18n-auto-sync`，可配置以下选项：
+### 项目结构要求
 
-### 基础配置
-- `triggerMode`: 触发模式（`auto-save` | `manual`）
-- `langRootDir`: 语言文件根目录（默认: `src/`）
-- `activeDirectories`: 活动目录过滤（默认: `src/*`）
-- `cleanUnusedKeys`: 清理未使用的翻译键
-
-### 高级配置  
-- `autoTranslate`: 启用自动翻译
-- `tencentSecretId`: 腾讯云翻译 API ID
-- `tencentSecretKey`: 腾讯云翻译 API 密钥
-- `excludePatterns`: 排除的文件模式
-
-示例配置：
-```json
-{
-  "i18n-auto-sync.triggerMode": "manual",
-  "i18n-auto-sync.langRootDir": "src/",
-  "i18n-auto-sync.activeDirectories": "src/app/*,src/components/*",
-  "i18n-auto-sync.autoTranslate": true
-}
-```
-
-## 📖 使用示例
-
-### 处理前
-```tsx
-export default function LoginPage() {
-  return (
-    <Form.Item
-      label="用户名"
-      name="username"
-      rules={[{ required: true, message: "请输入用户名" }]}
-    >
-      <Input placeholder="请输入用户名" />
-    </Form.Item>
-  );
-}
-```
-
-### 处理后
-```tsx
-import { useTranslation } from "@/i18n/hooks";
-
-export default function LoginPage() {
-  const { t } = useTranslation("common");
-  return (
-    <Form.Item
-      label={t("用户名")}
-      name="username"
-      rules={[{ required: true, message: t("请输入用户名") }]}
-    >
-      <Input placeholder={t("请输入用户名")} />
-    </Form.Item>
-  );
-}
-```
-
-### 翻译文件自动生成
-
-扩展会自动生成和更新翻译文件：
-
-```typescript
-// src/i18n/lang/zh/common.ts
-export default {
-  "用户名": "用户名",
-  "请输入用户名": "请输入用户名",
-};
-
-// src/i18n/lang/en/common.ts  
-export default {
-  "用户名": "Username",
-  "请输入用户名": "Please enter username",
-};
-```
-
-## 🎯 快捷键
-
-| 快捷键 | 命令 | 说明 |
-|--------|------|------|
-| `Ctrl+Alt+S` | 保存并处理 | 保存文件并处理中文字符串 |
-| `Ctrl+Shift+I` | 处理当前文件 | 仅处理当前文件的中文字符串 |
-| `Ctrl+Shift+R` | 重命名键值 | 重命名翻译键 |
-
-## 📁 项目结构要求
-
-插件要求项目具备以下基本结构：
-
+扩展期望以下标准项目结构：
 ```
 your-project/
 ├── src/
@@ -222,70 +63,47 @@ your-project/
 │   │   ├── hooks.ts          # useTranslation hook
 │   │   └── lang/
 │   │       ├── zh/
-│   │       │   └── common.ts # 中文翻译文件
-│   │       └── en/
-│   │           └── common.ts # 英文翻译文件
-│   ├── components/           # 你的组件
-│   └── ...
-└── ...
-```
-
-## 🔧 常见问题
-
-### Q: 插件没有自动处理中文字符串？
-A: 检查以下设置：
-1. 确保 `triggerMode` 设置正确
-2. 检查 `activeDirectories` 是否包含当前文件目录  
-3. 确保文件保存后再手动触发
-4. **注意**: 只有包含中文字符的字符串才会被处理
-
-### Q: 英文字符串没有被转换？
-A: 这是设计如此。插件目前只处理包含中文字符（汉字）的字符串。纯英文字符串会被忽略，以避免不必要的转换。
-
-### Q: 翻译文件没有生成？
-A: 确保：
-1. `langRootDir` 路径设置正确
-2. 项目根目录有 `src/i18n/lang/` 目录结构
-3. VS Code 有写入权限
-
-### Q: 自动翻译不工作？
-A: 检查腾讯云配置：
-1. `tencentSecretId` 和 `tencentSecretKey` 设置正确
-2. 腾讯云账户有翻译 API 权限
-3. 网络连接正常
-
-## 📄 许可证
-│   │   └── lang/
-│   │       ├── zh/
 │   │       │   └── common.ts # 中文翻译
 │   │       └── en/
 │   │           └── common.ts # 英文翻译
-│   └── ...
 ```
 
-## 🔧 开发
+### 配置
 
-```bash
-# 编译
-npm run compile
+关键 VS Code 设置（前缀：`i18n-auto-sync.`）：
+- `triggerMode`："auto-save" 或 "manual"
+- `langRootDir`：i18n 文件的根目录（默认："src/"）
+- `activeDirectories`：要处理的目录，逗号分隔（默认："src/*,pages/*"）
+- `excludePatterns`：要排除的目录（默认："node_modules,.next,dist,build"）
+- `autoTranslate`：启用腾讯云翻译
+- `processExternalConstants`：处理 React 组件外部的常量
 
-# 监听模式
-npm run watch
+### 处理逻辑
 
-# 打包
-npm run package
-```
+1. **字符串检测**：扫描字符串字面量中的中文字符
+2. **转换**：将 `"中文"` 转换为 `{t("中文")}`
+3. **导入管理**：自动添加 `useTranslation` hook 导入
+4. **翻译同步**：更新 zh/common.ts 和 en/common.ts 文件
+5. **组件作用域**：确保 `t()` 使用的正确 React 组件上下文
 
-## 📝 许可证
+## 文件操作
 
-MIT License
+扩展使用 `WriteBatch` 系统来：
+- 在单个操作中协调多个文件写入
+- 避免与打开文档中的用户编辑冲突
+- 跳过对脏（未保存）文件的写入
+- 当文件打开时通过 VS Code 工作区 API 应用编辑
 
-## 🤝 贡献
+## 翻译 API
 
-欢迎提交 Issue 和 Pull Request！
+启用时，使用腾讯云翻译 API：
+- Secret ID/密钥配置
+- ap-beijing 区域（固定）
+- 失败请求的重试机制
+- 每月 500 万免费字符（相比百度的 5 万限制）
 
-## 📝 版本历史
+---
 
-- **v0.1.0**: 代码重构，优化用户体验，完善文档
-- **v0.0.3**: 重构核心，修复损坏翻译文件；新增自动翻译、排序命令；增加翻译失败重试  
-- **v0.0.2**: 修复重复保存导致的嵌套问题；新增防抖机制；支持手动修改时自动补齐翻译文件
+## English Documentation
+
+For detailed technical documentation and architecture information, please refer to [README_EN.md](README_EN.md).
